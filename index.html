@@ -941,25 +941,13 @@ async function playYT(id, title) {
   $('ytStatus').className = 'status processing'
 
   try {
-    // Fetch audio via CORS proxy + Piped API
-    const CORS = 'https://corsproxy.io/?url='
-    const PIPED = [
-      'https://pipedapi.kavin.rocks',
-      'https://pipedapi.adminforge.de',
-      'https://pipedapi.darkness.services'
-    ]
-    let audioUrl = null
-    for (const inst of PIPED) {
-      try {
-        const endpoint = `${inst}/streams/${id}`
-        const r = await fetch(CORS + encodeURIComponent(endpoint), {signal: AbortSignal.timeout(10000)})
-        if (!r.ok) continue
-        const data = await r.json()
-        const fmt = (data.audioStreams || []).sort((a,b) => (b.bitrate||0)-(a.bitrate||0))[0]
-        if (fmt?.url) { audioUrl = CORS + encodeURIComponent(fmt.url); break }
-      } catch(e) { continue }
-    }
-    if (!audioUrl) throw new Error('Audio non disponibile. Controlla la connessione.')
+    // Backend Render API
+    const BACKEND = 'https://slowed-reverb-api-ekkv.onrender.com'
+    $('ytStatus').textContent = 'Connecting to server...'
+    const apiRes = await fetch(`${BACKEND}/audio?v=${id}`, {signal: AbortSignal.timeout(35000)})
+    const apiJson = await apiRes.json()
+    if (apiJson.error) throw new Error(apiJson.error)
+    const audioUrl = apiJson.url
     $('ytStatus').textContent = 'Loading...'
     if (!ytAudioCtx) ytAudioCtx = new (window.AudioContext || window.webkitAudioContext)()
     const res = await fetch(audioUrl)
