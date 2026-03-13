@@ -31,28 +31,11 @@ jobs:
 
       - name: Create capacitor config
         run: |
-          cat > capacitor.config.json << 'EOF2'
-          {
-            "appId": "com.g23.slowedreverb",
-            "appName": "SlowedReverb",
-            "webDir": "www",
-            "server": { "androidScheme": "https" },
-            "android": { "allowMixedContent": true }
-          }
-          EOF2
+          echo '{"appId":"com.g23.slowedreverb","appName":"SlowedReverb","webDir":"www","server":{"androidScheme":"https"},"android":{"allowMixedContent":true}}' > capacitor.config.json
 
       - name: Create package.json
         run: |
-          cat > package.json << 'EOF2'
-          {
-            "name": "slowed-reverb",
-            "version": "2.8.0",
-            "dependencies": {
-              "@capacitor/android": "5.7.4",
-              "@capacitor/core": "5.7.4"
-            }
-          }
-          EOF2
+          echo '{"name":"slowed-reverb","version":"2.8.0","dependencies":{"@capacitor/android":"5.7.4","@capacitor/core":"5.7.4"}}' > package.json
 
       - name: Add Android platform
         run: |
@@ -63,22 +46,7 @@ jobs:
         run: |
           if [ -f icon.png ]; then
             pip install Pillow --break-system-packages -q
-            for size in 48 72 96 144 192; do
-              case $size in
-                48)  dir="mdpi";;
-                72)  dir="hdpi";;
-                96)  dir="xhdpi";;
-                144) dir="xxhdpi";;
-                192) dir="xxxhdpi";;
-              esac
-              mkdir -p android/app/src/main/res/mipmap-$dir
-              python3 -c "
-from PIL import Image
-img = Image.open('icon.png').resize(($size,$size), Image.LANCZOS)
-img.save('android/app/src/main/res/mipmap-$dir/ic_launcher.png')
-img.save('android/app/src/main/res/mipmap-$dir/ic_launcher_round.png')
-"
-            done
+            python3 -c "from PIL import Image; sizes = {'mdpi':48,'hdpi':72,'xhdpi':96,'xxhdpi':144,'xxxhdpi':192}; [(__import__('os').makedirs(f'android/app/src/main/res/mipmap-{d}',exist_ok=True), Image.open('icon.png').resize((s,s),Image.LANCZOS).save(f'android/app/src/main/res/mipmap-{d}/ic_launcher.png'), Image.open('icon.png').resize((s,s),Image.LANCZOS).save(f'android/app/src/main/res/mipmap-{d}/ic_launcher_round.png')) for d,s in sizes.items()]"
           fi
 
       - name: Fix Gradle version
