@@ -19,6 +19,11 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Prepare www folder
+        run: |
+          mkdir -p www
+          cp index.html www/index.html
+
       - name: Install Capacitor
         run: |
           npm install @capacitor/core @capacitor/cli @capacitor/android
@@ -29,7 +34,7 @@ jobs:
           {
             "appId": "com.g23.slowedreverb",
             "appName": "Slowed+Reverb",
-            "webDir": ".",
+            "webDir": "www",
             "server": { "androidScheme": "https" },
             "android": { "allowMixedContent": true }
           }
