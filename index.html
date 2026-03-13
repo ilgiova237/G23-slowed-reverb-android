@@ -307,7 +307,7 @@
     <button class="tab active" onclick="switchTab('offline')">Offline</button>
     <button class="tab" onclick="switchTab('online')">YouTube</button>
   </div>
-  <span class="version">v2.7</span>
+  <span class="version">v2.8</span>
 </div>
 
 <!-- ── OFFLINE PAGE ──────────────────────────────────────────────────── -->
@@ -410,7 +410,7 @@
 
   <div class="card" id="ytPlayerCard" style="display:none;">
     <div id="ytNowPlaying" style="font-size:0.65rem;color:var(--accent2);margin-bottom:0.5rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
-    <div class="waveform-wrap" id="ytWaveformWrap" style="cursor:default;">
+    <div class="waveform-wrap" id="ytWaveformWrap" style="cursor:pointer;">
       <canvas id="ytWaveform"></canvas>
       <div class="progress-bar" id="ytProgressBar"></div>
     </div>
@@ -880,6 +880,23 @@ function ytUpdateProgress() {
   ytAnim = requestAnimationFrame(ytUpdateProgress)
 }
 
+// Seek on waveform click
+$('ytWaveformWrap').onclick = (e) => {
+  if (!ytBuf) return
+  const rect = e.currentTarget.getBoundingClientRect()
+  const ratio = (e.clientX - rect.left) / rect.width
+  const newOffset = ratio * ytBuf.duration
+  const wasPlaying = ytPlaying
+  if (wasPlaying) { try { ytSrc.stop() } catch(e){} ytSrc = null; ytNodes = null; ytPlaying = false; cancelAnimationFrame(ytAnim) }
+  ytOffset = newOffset
+  if (wasPlaying) ytPlay()
+  else {
+    const pct = (newOffset / ytBuf.duration * 100).toFixed(1)
+    $('ytProgressBar').style.width = pct + '%'
+    $('ytTimeElapsed').textContent = ytFmt(newOffset)
+  }
+}
+
 $('ytPlayBtn').onclick = () => ytPlaying ? ytPause() : ytPlay()
 $('ytStopBtn').onclick = ytStop
 
@@ -894,19 +911,23 @@ async function playYT(id, title) {
   $('ytStatus').className = 'status processing'
 
   try {
-    // Invidious fallback chain
-    const INVIDIOUS = ['https://inv.nadeko.net','https://yewtu.be','https://invidious.nerdvpn.de']
+    // Piped API fallback chain
+    const PIPED = [
+      'https://pipedapi.kavin.rocks',
+      'https://pipedapi.adminforge.de',
+      'https://pipedapi.darkness.services'
+    ]
     let audioUrl = null
-    for (const inst of INVIDIOUS) {
+    for (const inst of PIPED) {
       try {
-        const r = await fetch(`${inst}/api/v1/videos/${id}?fields=adaptiveFormats`, {signal: AbortSignal.timeout(8000)})
+        const r = await fetch(`${inst}/streams/${id}`, {signal: AbortSignal.timeout(8000)})
         if (!r.ok) continue
         const data = await r.json()
-        const fmt = (data.adaptiveFormats||[]).filter(f=>f.type?.startsWith('audio/')).sort((a,b)=>(b.bitrate||0)-(a.bitrate||0))[0]
+        const fmt = (data.audioStreams || []).sort((a,b) => (b.bitrate||0)-(a.bitrate||0))[0]
         if (fmt?.url) { audioUrl = fmt.url; break }
       } catch(e) { continue }
     }
-    if (!audioUrl) throw new Error('Nessuna istanza Invidious disponibile')
+    if (!audioUrl) throw new Error('Nessuna istanza Piped disponibile')
     $('ytStatus').textContent = 'Loading...'
     if (!ytAudioCtx) ytAudioCtx = new (window.AudioContext || window.webkitAudioContext)()
     const res = await fetch(audioUrl)
@@ -925,7 +946,7 @@ async function playYT(id, title) {
   }
 }
 
-// yt-dlp rimosso: audio via Invidious API
+// audio via Piped API
 
 // Sliders
 $('ytSpeedSlider').oninput = e => { $('ytSpeedVal').textContent = parseFloat(e.target.value).toFixed(2)+'x'; ytApplyLive() }
