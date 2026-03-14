@@ -17,11 +17,11 @@ App Android per applicare effetti slowed e reverb a file audio e brani YouTube.
 
 ## Note
 - La ricerca YouTube richiede connessione internet
-- La prima richiesta YouTube puo impiegare ~30 secondi (server free si sveglia)
+- La prima richiesta YouTube puo impiegare fino a 60 secondi (server free si sveglia)
 - L'esportazione WAV salva nella cartella Download del telefono
 - Testato su Android 10+
 
 ## Versioni
-- v2.9 - Fix YouTube (backend Render + yt-dlp), fix icona, pulsanti seek
+- v2.9 - Fix YouTube (backend Render + yt-dlp), pulsanti seek, icona
 - v2.8 - Porting Android, pulsanti seek, CORS proxy
 - v2.7 - Versione Electron desktop originale

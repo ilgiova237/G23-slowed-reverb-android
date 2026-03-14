@@ -944,7 +944,7 @@ async function playYT(id, title) {
     // Backend Render API
     const BACKEND = 'https://slowed-reverb-api-ekkv.onrender.com'
     $('ytStatus').textContent = 'Connecting to server...'
-    const apiRes = await fetch(`${BACKEND}/audio?v=${id}`, {signal: AbortSignal.timeout(35000)})
+    const apiRes = await fetch(`${BACKEND}/audio?v=${id}`, {signal: AbortSignal.timeout(60000)})
     const apiJson = await apiRes.json()
     if (apiJson.error) throw new Error(apiJson.error)
     const audioUrl = apiJson.url
