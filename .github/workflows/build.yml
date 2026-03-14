@@ -35,7 +35,7 @@ jobs:
 
       - name: Create package.json
         run: |
-          echo '{"name":"slowed-reverb","version":"2.8.0","dependencies":{"@capacitor/android":"5.7.4","@capacitor/core":"5.7.4"}}' > package.json
+          echo '{"name":"slowed-reverb","version":"2.9.0","dependencies":{"@capacitor/android":"5.7.4","@capacitor/core":"5.7.4"}}' > package.json
 
       - name: Add Android platform
         run: |
@@ -46,18 +46,7 @@ jobs:
         run: |
           if [ -f icon.png ]; then
             pip install Pillow --break-system-packages -q
-            python3 -c "
-import os
-from PIL import Image
-sizes = {'mdpi':48,'hdpi':72,'xhdpi':96,'xxhdpi':144,'xxxhdpi':192}
-for d,s in sizes.items():
-    path = f'android/app/src/main/res/mipmap-{d}'
-    os.makedirs(path, exist_ok=True)
-    img = Image.open('icon.png').resize((s,s), Image.LANCZOS)
-    img.save(f'{path}/ic_launcher.png')
-    img.save(f'{path}/ic_launcher_round.png')
-print('Icons set')
-"
+            python3 resize_icon.py
           fi
 
       - name: Fix Gradle version
@@ -80,5 +69,5 @@ print('Icons set')
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: SlowedReverb-v2.8
+          name: SlowedReverb-v2.9
           path: release/
