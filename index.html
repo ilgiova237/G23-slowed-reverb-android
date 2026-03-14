@@ -383,9 +383,13 @@
 
   <div class="card">
     <p class="status" id="status">Load a file to begin</p>
-    <div class="playback">
-      <button class="btn btn-secondary" id="stopBtn" disabled>■</button>
-      <button class="btn btn-primary" id="playBtn" disabled>▶ Play</button>
+    <div style="display:flex; align-items:center; gap:0.3rem; margin-bottom:0.4rem;">
+      <button class="btn btn-secondary" id="seekM30" style="font-size:0.55rem;padding:0.3rem 0.5rem;flex:1;">-30s</button>
+      <button class="btn btn-secondary" id="seekM10" style="font-size:0.55rem;padding:0.3rem 0.5rem;flex:1;">-10s</button>
+      <button class="btn btn-secondary" id="stopBtn" style="flex:0.8;" disabled>■</button>
+      <button class="btn btn-primary" id="playBtn" style="flex:1.5;" disabled>▶ Play</button>
+      <button class="btn btn-secondary" id="seekP10" style="font-size:0.55rem;padding:0.3rem 0.5rem;flex:1;">+10s</button>
+      <button class="btn btn-secondary" id="seekP30" style="font-size:0.55rem;padding:0.3rem 0.5rem;flex:1;">+30s</button>
     </div>
     <button class="btn btn-render" id="renderBtn" disabled>⬇ Render & Download WAV</button>
     <div class="render-bar" id="renderBar"></div>
@@ -408,7 +412,7 @@
     </div>
   </div>
 
-  <div class="card" id="ytPlayerCard" style="display:none;">
+  <div class="card" id="ytPlayerCard">
     <div id="ytNowPlaying" style="font-size:0.65rem;color:var(--accent2);margin-bottom:0.5rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
     <div class="waveform-wrap" id="ytWaveformWrap" style="cursor:pointer;">
       <canvas id="ytWaveform"></canvas>
@@ -419,19 +423,9 @@
       <span id="ytTimeDuration">0:00</span>
     </div>
     <p class="status" id="ytStatus" style="margin-top:0.5rem;">Search a song to begin</p>
-    <div class="playback" style="margin-top:0.4rem;">
-      <button class="btn btn-secondary" id="ytStopBtn" disabled>&#9632;</button>
-      <button class="btn btn-primary" id="ytPlayBtn" disabled>&#9654; Play</button>
-    </div>
-    <div class="playback" style="margin-top:0.4rem; justify-content:center; gap:0.3rem;">
-      <button class="btn btn-secondary" id="ytSeekM30" style="font-size:0.55rem;padding:0.3rem 0.5rem;" disabled>-30s</button>
-      <button class="btn btn-secondary" id="ytSeekM10" style="font-size:0.55rem;padding:0.3rem 0.5rem;" disabled>-10s</button>
-      <button class="btn btn-secondary" id="ytSeekP10" style="font-size:0.55rem;padding:0.3rem 0.5rem;" disabled>+10s</button>
-      <button class="btn btn-secondary" id="ytSeekP30" style="font-size:0.55rem;padding:0.3rem 0.5rem;" disabled>+30s</button>
-    </div>
   </div>
 
-  <div class="card" id="ytControlsCard" style="display:none;">
+  <div class="card" id="ytControlsCard">
     <div class="yt-note">Speed changes pitch (classic slowed+reverb). Reverb and bass apply via Web Audio.</div>
     <div class="preset-row">
       <button class="preset-btn" data-yt-speed="0.75" data-yt-reverb="70" data-yt-bass="3" data-yt-room="hall">Dreamy</button>
@@ -470,6 +464,15 @@
         <div class="control-header"><span class="control-label">Volume</span><span class="control-value" id="ytVolVal">100%</span></div>
         <input type="range" id="ytVolSlider" min="0" max="150" step="1" value="100">
       </div>
+    </div>
+    <div class="divider" style="margin:0.6rem 0;"></div>
+    <div style="display:flex; align-items:center; gap:0.3rem;">
+      <button class="btn btn-secondary" id="ytSeekM30" style="font-size:0.55rem;padding:0.3rem 0.5rem;flex:1;">-30s</button>
+      <button class="btn btn-secondary" id="ytSeekM10" style="font-size:0.55rem;padding:0.3rem 0.5rem;flex:1;">-10s</button>
+      <button class="btn btn-secondary" id="ytStopBtn" style="flex:0.8;" disabled>&#9632;</button>
+      <button class="btn btn-primary" id="ytPlayBtn" style="flex:1.5;" disabled>&#9654; Play</button>
+      <button class="btn btn-secondary" id="ytSeekP10" style="font-size:0.55rem;padding:0.3rem 0.5rem;flex:1;">+10s</button>
+      <button class="btn btn-secondary" id="ytSeekP30" style="font-size:0.55rem;padding:0.3rem 0.5rem;flex:1;">+30s</button>
     </div>
   </div>
 
@@ -603,18 +606,22 @@ async function loadFile(file) {
   pauseOffset = 0
   $('playBtn').disabled = false
   $('renderBtn').disabled = false
+  try { ['seekM30','seekM10','seekP10','seekP30'].forEach(id => { if($(id)) $(id).disabled = false }) } catch(e){}
   setStatus('Ready  ' + fmt(originalBuffer.duration), 'ready')
 }
 
 function playAudio() {
   if (!originalBuffer) return
   if (audioCtx.state === 'suspended') audioCtx.resume()
+  const speed = parseFloat($('speedSlider').value)
+  const offset = pauseOffset
   const nodes = buildGraph(audioCtx, originalBuffer,
-    parseFloat($('speedSlider').value), parseFloat($('reverbSlider').value),
+    speed, parseFloat($('reverbSlider').value),
     currentRoom, parseFloat($('bassSlider').value), parseFloat($('volSlider').value))
   liveNodes = nodes; sourceNode = nodes.src
-  nodes.src.start(0, pauseOffset)
-  startTime = audioCtx.currentTime - pauseOffset / parseFloat($('speedSlider').value)
+  nodes.src.start(0, offset)
+  pauseOffset = 0
+  startTime = audioCtx.currentTime - offset / speed
   isPlaying = true
   $('playBtn').textContent = 'II Pause'
   $('stopBtn').disabled = false
@@ -643,6 +650,34 @@ function stopAudio() {
 
 $('playBtn').onclick = () => isPlaying ? pauseAudio() : playAudio()
 $('stopBtn').onclick = stopAudio
+
+function seekOfflineBy(secs) {
+  if (!originalBuffer) return
+  const speed = parseFloat($('speedSlider').value)
+  // Calculate true position: startTime is set so that elapsed = (now - startTime) * speed
+  const truePos = isPlaying
+    ? (audioCtx.currentTime - startTime) * speed
+    : pauseOffset
+  const newOffset = Math.max(0, Math.min(originalBuffer.duration - 0.1, truePos + secs))
+  const wasPlaying = isPlaying
+  isPlaying = false
+  cancelAnimationFrame(animFrame)
+  if (sourceNode) {
+    sourceNode.onended = null
+    try { sourceNode.stop() } catch(e){}
+    sourceNode = null
+  }
+  liveNodes = null
+  pauseOffset = newOffset
+  $('progressBar').style.width = (newOffset / originalBuffer.duration * 100).toFixed(1) + '%'
+  $('timeElapsed').textContent = fmt(newOffset)
+  if (wasPlaying) playAudio()
+}
+
+$('seekM30').onclick = () => seekOfflineBy(-30)
+$('seekM10').onclick = () => seekOfflineBy(-10)
+$('seekP10').onclick = () => seekOfflineBy(10)
+$('seekP30').onclick = () => seekOfflineBy(30)
 
 // Seek
 const ww = $('waveformWrap'), sl = $('seekLine')
@@ -721,7 +756,9 @@ $('renderBtn').onclick = async () => {
   const rendered = await offCtx.startRendering()
   clearInterval(iv); $('renderBar').style.width='100%'
   const wav = encodeWAV(rendered)
-  const filename = ($('fileName').textContent||'output').replace(/\.[^/.]+$/,'')+'_slowed_reverb.wav'
+  const spd = Math.round(parseFloat($('speedSlider').value) * 100)
+  const rev = Math.round(parseFloat($('reverbSlider').value))
+  const filename = ($('fileName').textContent||'output').replace(/\.[^/.]+$/,'') + `_Slow${spd}_Rev${rev}.wav`
   const blob = new Blob([wav], {type:'audio/wav'})
   const a = document.createElement('a')
   a.href = URL.createObjectURL(blob)
@@ -944,7 +981,7 @@ async function playYT(id, title) {
     // Backend Render API
     const BACKEND = 'https://slowed-reverb-api-ekkv.onrender.com'
     $('ytStatus').textContent = 'Connecting to server...'
-    const apiRes = await fetch(`${BACKEND}/audio?v=${id}`, {signal: AbortSignal.timeout(60000)})
+    const apiRes = await fetch(`${BACKEND}/audio?v=${id}`, {signal: AbortSignal.timeout(120000)})
     const apiJson = await apiRes.json()
     if (apiJson.error) throw new Error(apiJson.error)
     const audioUrl = apiJson.url
