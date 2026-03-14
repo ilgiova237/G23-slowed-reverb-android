@@ -46,7 +46,18 @@ jobs:
         run: |
           if [ -f icon.png ]; then
             pip install Pillow --break-system-packages -q
-            python3 -c "from PIL import Image; sizes = {'mdpi':48,'hdpi':72,'xhdpi':96,'xxhdpi':144,'xxxhdpi':192}; [(__import__('os').makedirs(f'android/app/src/main/res/mipmap-{d}',exist_ok=True), Image.open('icon.png').resize((s,s),Image.LANCZOS).save(f'android/app/src/main/res/mipmap-{d}/ic_launcher.png'), Image.open('icon.png').resize((s,s),Image.LANCZOS).save(f'android/app/src/main/res/mipmap-{d}/ic_launcher_round.png')) for d,s in sizes.items()]"
+            python3 -c "
+import os
+from PIL import Image
+sizes = {'mdpi':48,'hdpi':72,'xhdpi':96,'xxhdpi':144,'xxxhdpi':192}
+for d,s in sizes.items():
+    path = f'android/app/src/main/res/mipmap-{d}'
+    os.makedirs(path, exist_ok=True)
+    img = Image.open('icon.png').resize((s,s), Image.LANCZOS)
+    img.save(f'{path}/ic_launcher.png')
+    img.save(f'{path}/ic_launcher_round.png')
+print('Icons set')
+"
           fi
 
       - name: Fix Gradle version
@@ -60,12 +71,14 @@ jobs:
           cd android
           ./gradlew assembleDebug
 
-      - name: Rename APK
+      - name: Package release
         run: |
-          cp android/app/build/outputs/apk/debug/app-debug.apk SlowedReverb.apk
+          mkdir -p release
+          cp android/app/build/outputs/apk/debug/app-debug.apk release/SlowedReverb.apk
+          if [ -f README.md ]; then cp README.md release/README.md; fi
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: SlowedReverb-v2.8
-          path: SlowedReverb.apk
+          path: release/
